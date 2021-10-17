@@ -18,8 +18,18 @@ def load_yaml():
             print(exc)
 
 
-def init_driver():
-    driver = webdriver.Chrome()
+def get_headless_chrome_opts():
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--window-size=1420,1080')
+    chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--disable-gpu')
+    return chrome_options
+
+
+def init_driver_headless():
+    chrome_options = get_headless_chrome_opts()
+    driver = webdriver.Chrome(options=chrome_options)
     return driver
 
 
@@ -43,9 +53,10 @@ def login_ubc(driver, username, password):
     login_btn.click()
 
 
-def restart_driver():
+def restart_driver(driver):
+    driver.quit()
     time.sleep(10)
-    return init_driver()
+    return init_driver_headless()
 
 
 def request_upass(driver):
@@ -55,13 +66,14 @@ def request_upass(driver):
 
 if __name__ == '__main__':
     users = load_yaml()
-    driver = init_driver()
-
+    headless_chrome = init_driver_headless()
     for user in users:
-        username = user['USERNAME']
-        password = user['PASSWORD']
-        upass_select_school(driver)
-        login_ubc(driver, username, password)
-        request_upass(driver)
-        driver = restart_driver()
+        username = users[user]['USERNAME']
+        password = users[user]['PASSWORD']
+        upass_select_school(headless_chrome)
+        login_ubc(headless_chrome, username, password)
+        time.sleep(30)
+        request_upass(headless_chrome)
+        print(f"Successfully requested U-Pass for {username}")
+        headless_chrome = restart_driver(headless_chrome)
 
